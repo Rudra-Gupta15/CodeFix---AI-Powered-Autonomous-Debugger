@@ -1,7 +1,6 @@
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from agent import get_debug_agent
 from runner import run_code
 
 # Setup path for frontend
@@ -16,20 +15,9 @@ def index():
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({"status": "healthy", "engine": "OpenAI GPT-4o Agent"})
+    return jsonify({"status": "healthy", "engine": "Ollama Local IDE"})
 
-@app.route('/debug', methods=['POST'])
-def debug():
-    data = request.json
-    code = data.get('code', '')
-    if not code:
-        return jsonify({"error": "No code provided"}), 400
-    try:
-        agent = get_debug_agent()
-        response = agent.invoke({"input": code})
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/run', methods=['POST'])
 def api_run():
