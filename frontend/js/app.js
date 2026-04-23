@@ -391,28 +391,14 @@ function clearConsole(silent = false) {
 function updateEngineBadge(model) {
   const eb = document.getElementById("engineBadge");
   if (!eb) return;
-  if (model === "gpt-4") {
-    eb.textContent = "Autonomous Agent";
-    eb.className = "engine-badge agent";
-  } else {
-    eb.textContent = "Local Ollama";
-    eb.className = "engine-badge";
-  }
+  eb.textContent = "Local Ollama";
+  eb.className = "engine-badge";
 }
 
 function initOllama() {
   OllamaController.setBaseUrl(document.getElementById("ollamaUrl").value);
 
   async function checkAll() {
-    const backendOnline = await BackendController.checkStatus();
-    const select = document.getElementById("modelSelect");
-    if (backendOnline && !Array.from(select.options).some(o => o.value === "gpt-4")) {
-      const opt = document.createElement("option");
-      opt.value = "gpt-4";
-      opt.textContent = "GPT-4o (Autonomous)";
-      select.prepend(opt);
-    }
-    updateEngineBadge(select.value);
     OllamaController.checkStatus();
   }
 
@@ -428,9 +414,7 @@ function initOllama() {
     }
     if (online && models?.length) {
       const cur = sel.value;
-      const agentOpt = Array.from(sel.options).find(o => o.value === "gpt-4");
       sel.innerHTML = "";
-      if (agentOpt) sel.appendChild(agentOpt);
       models.forEach(m => {
         const o = document.createElement("option");
         o.value = m; o.textContent = m;
@@ -493,33 +477,29 @@ async function runDebug() {
   resetResultsUI();
 
   let result;
-  if (model === "gpt-4") {
-    result = await BackendController.debugCode(code);
-  } else {
-    OllamaController.setModel(model);
-    
-    // Auto-run the code to capture execution traceback to help Local Ollama catch runtime errors
-    let traceback = null;
-    try {
-      const lang = CODEFIX_CONCEPT.languages[AppState.currentLangId];
-      const runRes = await fetch("http://localhost:5000/api/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language: lang.id, code: code, stdin: "" })
-      });
-      if (runRes.ok) {
-        const runData = await runRes.json();
-        // If there is an error code and stderr output, pass that to the LLM
-        if (runData.code !== 0 && runData.stderr) {
-          traceback = runData.stderr;
-        }
+  OllamaController.setModel(model);
+  
+  // Auto-run the code to capture execution traceback to help Local Ollama catch runtime errors
+  let traceback = null;
+  try {
+    const lang = CODEFIX_CONCEPT.languages[AppState.currentLangId];
+    const runRes = await fetch("http://localhost:5000/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: lang.id, code: code, stdin: "" })
+    });
+    if (runRes.ok) {
+      const runData = await runRes.json();
+      // If there is an error code and stderr output, pass that to the LLM
+      if (runData.code !== 0 && runData.stderr) {
+        traceback = runData.stderr;
       }
-    } catch (e) {
-      // Ignore run errors; if the backend is down, we'll let Ollama try static analysis
     }
-
-    result = await OllamaController.debugCode(code, traceback);
+  } catch (e) {
+    // Ignore run errors; if the backend is down, we'll let Ollama try static analysis
   }
+
+  result = await OllamaController.debugCode(code, traceback);
 
   if (!result.ok) {
     if (result.rawText) {
