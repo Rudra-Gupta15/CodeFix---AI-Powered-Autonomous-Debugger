@@ -1,0 +1,16 @@
+# Core web framework
+flask
+flask-cors
+
+# OpenAI SDK (used directly in agent.py — NO LangChain needed)
+openai>=1.0.0
+
+# Environment variables
+python-dotenv
+
+# Static analysis tools (used in analysis.py)
+pylint
+flake8
+
+# HTTP client for Piston API proxy in runner.py
+requests

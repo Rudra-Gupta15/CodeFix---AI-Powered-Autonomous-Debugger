@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeFix — Online IDE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:," />
+</head>
+<body>
+<div class="app-container">
+
+  <!-- ── NAVBAR ── -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo"><span class="logo-pip"></span>Code<span class="logo-accent">Fix</span></div>
+    </div>
+    <div class="nav-center">
+      <div class="ollama-controls">
+        <select class="model-select" id="modelSelect"><option value="">(Loading…)</option></select>
+        <div class="status-indicator">
+          <span class="status-pip" id="statusPip"></span>
+          <span class="status-text" id="statusText">Checking…</span>
+          <span class="engine-badge" id="engineBadge">Ollama</span>
+        </div>
+        <button class="btn-ai-debug" id="debugBtn">
+          <span class="btn-play-icon"></span>
+          <span class="btn-spinner"></span>
+          <span class="btn-label">AI Debug</span>
+        </button>
+      </div>
+    </div>
+    <div class="nav-right">
+      <input class="url-input" id="ollamaUrl" type="text" value="http://127.0.0.1:11434" spellcheck="false" />
+      <button class="icon-btn" id="troubleshootBtn" title="Connection Help">
+        <svg viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace-grid">
+
+    <!-- ── LEFT: ICON LANGUAGE SIDEBAR ── -->
+    <aside class="col-lang-icons" id="langSidebar">
+      <div class="lang-icon-list" id="langIconList">
+
+        <button class="lang-icon-btn active" data-lang="python" title="Python">
+          <span class="lang-icon-glyph">🐍</span>
+          <span class="lang-icon-label">PY</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="javascript" title="JavaScript">
+          <span class="lang-icon-glyph">⚡</span>
+          <span class="lang-icon-label">JS</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="typescript" title="TypeScript">
+          <span class="lang-icon-glyph">🔹</span>
+          <span class="lang-icon-label">TS</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="java" title="Java">
+          <span class="lang-icon-glyph">☕</span>
+          <span class="lang-icon-label">JA</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="c" title="C">
+          <span class="lang-icon-glyph">⚙</span>
+          <span class="lang-icon-label">C</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="cpp" title="C++">
+          <span class="lang-icon-glyph">🔷</span>
+          <span class="lang-icon-label">C+</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="go" title="Go">
+          <span class="lang-icon-glyph">🔵</span>
+          <span class="lang-icon-label">GO</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="php" title="PHP">
+          <span class="lang-icon-glyph">🐘</span>
+          <span class="lang-icon-label">PHP</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="ruby" title="Ruby">
+          <span class="lang-icon-glyph">💎</span>
+          <span class="lang-icon-label">RB</span>
+        </button>
+        <button class="lang-icon-btn" data-lang="rust" title="Rust">
+          <span class="lang-icon-glyph">🦀</span>
+          <span class="lang-icon-label">RS</span>
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- ── MIDDLE: EDITOR + CONSOLE ── -->
+    <section class="col-editor-area">
+
+      <!-- File tabs + Run button -->
+      <div class="editor-topbar">
+        <div class="file-tabs" id="fileTabs"></div>
+        <div class="topbar-actions">
+          <button class="add-file-btn" id="addFileBtn" title="New File">+</button>
+          <button class="btn-run-code" id="runBtn">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+            Run
+          </button>
+        </div>
+      </div>
+
+      <!-- CodeMirror -->
+      <div class="editor-wrap">
+        <textarea id="codeEditor"></textarea>
+      </div>
+
+      <!-- Console / Output Panel -->
+      <div class="console-panel" id="consolePanel">
+        <div class="console-header">
+          <div class="console-title-area">
+            <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z"/></svg>
+            <span>Output</span>
+            <span class="console-exec-status" id="consoleStatus"></span>
+          </div>
+          <div class="console-ctrl">
+            <div class="stdin-toggle-wrap">
+              <label class="stdin-toggle-label" for="stdinToggle">Stdin</label>
+              <input type="checkbox" id="stdinToggle" class="stdin-toggle-cb" />
+            </div>
+            <button class="console-icon-btn" id="consoleClearBtn" title="Clear output">
+              <svg viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            </button>
+            <button class="console-icon-btn" id="consoleToggleBtn" title="Toggle console">
+              <svg viewBox="0 0 24 24" width="13" height="13" id="consoleToggleIcon"><path fill="currentColor" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Stdin (hidden by default) -->
+        <div class="stdin-panel" id="stdinPanel" style="display:none">
+          <textarea class="stdin-textarea" id="stdinInput" placeholder="Enter stdin input here…"></textarea>
+        </div>
+
+        <!-- Output -->
+        <div class="console-body" id="consoleBody">
+          <pre class="console-idle" id="consolePlaceholder">▷  Click <strong>Run</strong> to execute your code</pre>
+          <pre class="console-output" id="consoleOutput" style="display:none"></pre>
+        </div>
+      </div>
+
+      <!-- Editor footer bar -->
+      <div class="editor-footer">
+        <span id="cursorInfo">Ln 1, Col 1</span>
+        <span>UTF-8</span>
+        <span class="lang-badge" id="editorLangBadge">Python 3.x</span>
+      </div>
+    </section>
+
+    <!-- ── RIGHT: AI RESULTS ── -->
+    <aside class="col-results">
+      <div class="panel-header">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="errors" id="tabErrors" role="tab">
+            Errors <span class="tab-badge" id="errorBadge"></span>
+          </button>
+          <button class="tab" data-tab="explain" id="tabExplain" role="tab">Explain</button>
+        </div>
+      </div>
+
+      <div class="results-content">
+        <!-- ERRORS -->
+        <div class="tab-pane active" id="paneErrors">
+          <div class="empty-state" id="errorsEmptyState">
+            <div class="empty-glyph">⚡</div>
+            <p class="empty-title">No analysis yet</p>
+            <p class="empty-sub" id="errorsEmptySub">Hit AI Debug to analyze your code</p>
+          </div>
+          <div class="errors-list" id="errorsList"></div>
+          <!-- Fixed code box -->
+          <div class="code-box" id="fixedCodeBox">
+            <div class="code-box-header">
+              <div class="code-box-title">
+                <svg viewBox="0 0 24 24" width="13" height="13"><path fill="#f59e0b" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>
+                <span id="fixedCodeFilename">fixed.py</span>
+                <span class="code-box-badge">AI Fixed</span>
+              </div>
+              <div class="code-box-controls">
+                <button class="code-box-btn copy" id="copyBtn">Copy</button>
+                <button class="code-box-btn run" id="applyBtn">
+                  <svg viewBox="0 0 24 24" width="11" height="11"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                  Apply Fix
+                </button>
+              </div>
+            </div>
+            <pre class="code-box-body" id="fixedCodeBody"></pre>
+          </div>
+        </div>
+
+        <!-- EXPLAIN -->
+        <div class="tab-pane" id="paneExplain">
+          <div class="empty-state" id="explainEmptyState">
+            <div class="empty-glyph">◈</div>
+            <p class="empty-title">No explanation yet</p>
+            <p class="empty-sub">Run AI Debug for a point-by-point breakdown</p>
+          </div>
+          <div class="explain-section" id="explainSection">
+            <div class="explain-content" id="explainContent"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ── STATUS BAR ── -->
+  <footer class="action-footer">
+    <div class="status-bar-left">
+      <span class="status-bar-item">Made by Rudra Gupta</span>
+    </div>
+    <p class="action-status" id="actionStatus">Ready</p>
+    <div class="footer-right-actions">
+      <button class="footer-apply-btn" id="footerApplyBtn" style="display:none">✓ Apply Fix</button>
+      <span class="status-bar-item" id="footerLangLabel">Python 3.x</span>
+    </div>
+  </footer>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Connection Help</h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-step"><span class="step-num">1</span><div><strong>Start Ollama</strong><p>Run <code>start_ollama.bat</code> or install from <a href="https://ollama.com" target="_blank">ollama.com</a></p></div></div>
+      <div class="modal-step"><span class="step-num">2</span><div><strong>GPT-4o Agent</strong><p>Set <code>OPENAI_API_KEY</code> in <code>backend/.env</code>, then run <code>start_backend.bat</code></p></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Rename dialog -->
+<div class="rename-overlay" id="renameOverlay" style="display:none">
+  <div class="rename-dialog">
+    <label>Rename file</label>
+    <input type="text" id="renameInput" spellcheck="false" />
+    <div class="rename-actions">
+      <button id="renameCancelBtn">Cancel</button>
+      <button id="renameConfirmBtn" class="btn-confirm">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/ruby/ruby.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/simple.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="js/concept.js"></script>
+<script src="js/ollama.js"></script>
+<script src="js/backend.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
